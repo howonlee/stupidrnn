@@ -11,23 +11,27 @@ import time
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 trX, trY, teX, teY = mnist.train.images, mnist.train.labels, mnist.test.images, mnist.test.labels
-num_nets = 5
 
-X0 = tf.placeholder("float", [None, 784])
+num_nets = 5
+num_hiddens = 100
+input_dim = 784
+
+X0 = tf.placeholder("float", [None, input_dim])
 Xs = [X0]
 for x in xrange(num_nets):
-    locals()["X" + str(x+1)] = tf.placeholder("float", [None, 625]) # more than a bit precious
+    locals()["X" + str(x+1)] = tf.placeholder("float", [None, num_hiddens + input_dim])
+    # more than a bit precious, I'm afraid
     Xs.append(locals()["X" + str(x+1)])
 
 Y = tf.placeholder("float", [None, 10])
 
-w_hs = [tf.Variable(tf.random_normal([784, 625], stddev=0.01))]
+w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.01))]
 for x in xrange(num_nets):
-    w_hs.append(tf.Variable(tf.random_normal([625, 625], stddev=0.01)))
+    w_hs.append(tf.Variable(tf.random_normal([num_hiddens + input_dim, num_hiddens], stddev=0.01)))
 
-w_os = [tf.Variable(tf.random_normal([625, 10], stddev=0.01))]
+w_os = [tf.Variable(tf.random_normal([num_hiddens, 10], stddev=0.01))]
 for x in xrange(num_nets):
-    w_os.append(tf.Variable(tf.random_normal([625, 10], stddev=0.01)))
+    w_os.append(tf.Variable(tf.random_normal([num_hiddens, 10], stddev=0.01)))
 
 hs = [tf.nn.sigmoid(tf.matmul(Xs[idx], w_h)) for idx, w_h in enumerate(w_hs)]
 py_xs = [tf.matmul(h, w_os[x]) for x, h in enumerate(hs)]
@@ -58,5 +62,5 @@ for net_idx, curr_train_ops in enumerate(train_ops):
         print i, curr_acc, time.clock()
     total_tr_fd = {Y: trY[:]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
-    curr_trX = hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)
-    curr_teX = hs[net_idx].eval(session=sess, feed_dict=te_fd)
+    curr_trX = np.hstack((trX, hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)))
+    curr_teX = np.hstack((teX, hs[net_idx].eval(session=sess, feed_dict=te_fd)))
