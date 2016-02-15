@@ -10,23 +10,22 @@ import input_data
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 trX, trY, teX, teY = mnist.train.images, mnist.train.labels, mnist.test.images, mnist.test.labels
+num_nets = 5
 
-curr_x_idx = 0
 X0 = tf.placeholder("float", [None, 784])
 Xs = [X0]
-for x in xrange(1):
+for x in xrange(num_nets):
     locals()["X" + str(x+1)] = tf.placeholder("float", [None, 625]) # more than a bit precious
     Xs.append(locals()["X" + str(x+1)])
-print Xs
 
 Y = tf.placeholder("float", [None, 10])
 
 w_hs = [tf.Variable(tf.random_normal([784, 625], stddev=0.01))]
-for x in xrange(1):
+for x in xrange(num_nets):
     w_hs.append(tf.Variable(tf.random_normal([625, 625], stddev=0.01)))
 
 w_os = [tf.Variable(tf.random_normal([625, 10], stddev=0.01))]
-for x in xrange(1):
+for x in xrange(num_nets):
     w_os.append(tf.Variable(tf.random_normal([625, 10], stddev=0.01)))
 
 # this is a basic mlp, think 2 stacked logistic regressions
