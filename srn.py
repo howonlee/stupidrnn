@@ -43,19 +43,16 @@ sess.run(init)
 curr_trX = trX[:]
 curr_teX = teX[:]
 for net_idx, curr_train_ops in enumerate(train_ops):
-    te_fd = {}
+    te_fd = {Y: teY}
     te_fd[locals()["X" + str(net_idx)]] = curr_teX
-    te_fd[locals()["Y"]] = teY
     for i in range(10):
         for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
-            tr_fd = {}
+            tr_fd = {Y: trY[start:end]}
             tr_fd[locals()["X" + str(net_idx)]] = curr_trX[start:end]
-            tr_fd[locals()["Y"]] = trY[start:end]
             sess.run(curr_train_ops, feed_dict=tr_fd)
         print i, np.mean(np.argmax(teY, axis=1) ==
                          sess.run(predict_ops[net_idx], feed_dict=te_fd))
-    total_tr_fd = {}
+    total_tr_fd = {Y: trY[:]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
-    total_tr_fd[locals()["Y"]] = trY[:]
     curr_trX = hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)
     curr_teX = hs[net_idx].eval(session=sess, feed_dict=te_fd)
