@@ -13,9 +13,9 @@ def onehot(idx, char_len):
     arr[idx] = 1.0
     return arr
 
-num_nets = 5
+num_nets = 10
 num_hiddens = 400
-num_epochs = 50
+num_epochs = 3
 
 with open("corpus.txt") as corpus_file:
     chars = list(corpus_file.read())[:100000]
@@ -29,16 +29,12 @@ with open("corpus.txt") as corpus_file:
         for fst, snd in zip(chars, chars[1:]):
             all_data.append((char_to_idx[fst], char_to_idx[snd]))
         train_len = (19 * len(all_data)) // 20
-        train_list = all_data[:train_len]
-        test_list = all_data[train_len:]
+        train_list = all_data[:train_len][net_idx:]
+        test_list = all_data[train_len:][net_idx:]
         trXs.append(np.vstack(tuple(map(op.itemgetter(0), train_list))))
         teXs.append(np.vstack(tuple(map(op.itemgetter(0), test_list))))
         trYs.append(np.vstack(tuple(map(op.itemgetter(1), train_list))))
         teYs.append(np.vstack(tuple(map(op.itemgetter(1), test_list))))
-    # trXs.reverse()
-    # teXs.reverse()
-    # trYs.reverse()
-    # teYs.reverse()
 print "finished processing corpus"
 
 
@@ -94,5 +90,5 @@ for net_idx, curr_train_ops in enumerate(train_ops):
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
     # fix this properly
     if net_idx < (num_nets-1):
-        curr_trX = np.hstack((trXs[net_idx][net_idx:], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)))
+        curr_trX = np.hstack((trXs[net_idx], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)))
         curr_teX = np.hstack((teXs[net_idx], hs[net_idx].eval(session=sess, feed_dict=te_fd)))
