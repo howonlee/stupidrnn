@@ -17,8 +17,8 @@ def onehot(idx, vocab_size):
     return arr
 
 num_nets = 10
-num_hiddens = 150
-num_epochs = 40
+num_hiddens = 500
+num_epochs = 100
 
 
 def make_data_arr(data_list, vocab_size):
@@ -164,7 +164,7 @@ for net_idx, curr_train_ops in enumerate(train_ops):
         # use prediction accuracy because I can't be bothered to do perplexity properly right now
         curr_acc = np.mean(np.argmax(teYs[net_idx], axis=1) ==
                            sess.run(predict_ops[net_idx], feed_dict=te_fd))
-        print i, curr_acc, time.clock()
+        print i, " / ", num_epochs, " || ",  curr_acc, time.clock()
     total_tr_fd = {Y: trYs[net_idx]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
     # print len(trXs[net_idx+1]), len(hs[net_idx].eval(session=sess, feed_dict=total_tr_fd))
