@@ -14,11 +14,11 @@ def onehot(idx, char_len):
     return arr
 
 num_nets = 10
-num_hiddens = 400
+num_hiddens = 200
 num_epochs = 30
 
 with open("corpus.txt") as corpus_file:
-    chars = list(corpus_file.read())[:100000]
+    chars = list(corpus_file.read())[:300000]
     char_len = len(set(chars))
     char_to_idx = {char:onehot(idx, char_len) for idx, char in enumerate(list(set(chars)))}
     trXs, teXs, trYs, teYs = [], [], [], []
