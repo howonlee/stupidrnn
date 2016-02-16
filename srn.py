@@ -16,9 +16,9 @@ def onehot(idx, vocab_size):
     arr[idx] = 1.0
     return arr
 
-num_nets = 2
+num_nets = 10
 num_hiddens = 150
-num_epochs = 10
+num_epochs = 40
 
 
 def make_data_arr(data_list, vocab_size):
