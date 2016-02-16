@@ -8,8 +8,8 @@ import tensorflow as tf
 import numpy as np
 import numpy.random as npr
 import time
-import sys
 import operator as op
+
 
 def onehot(idx, vocab_size):
     arr = np.zeros(vocab_size)
@@ -19,6 +19,7 @@ def onehot(idx, vocab_size):
 num_nets = 2
 num_hiddens = 150
 num_epochs = 10
+
 
 def make_data_arr(data_list, vocab_size):
     arr = np.zeros((len(data_list), vocab_size))
@@ -31,8 +32,8 @@ with open("corpus.txt") as corpus_file:
     print len(chars)
     chars = chars[:200000]
     vocab_size = len(set(chars))
-    char_to_idx = {char:idx for idx, char in enumerate(list(set(chars)))}
-    idx_to_char = {idx:char for idx, char in enumerate(list(set(chars)))}
+    char_to_idx = {char: idx for idx, char in enumerate(list(set(chars)))}
+    idx_to_char = {idx: char for idx, char in enumerate(list(set(chars)))}
     trXs, teXs, trYs, teYs = [], [], [], []
     for net_idx in xrange(num_nets):
         train_len = ((19 * len(chars)) // 20) - net_idx
@@ -67,7 +68,8 @@ output_dim = vocab_size
 X0 = tf.placeholder("float", [None, input_dim])
 Xs = [X0]
 for x in xrange(num_nets):
-    locals()["X" + str(x+1)] = tf.placeholder("float", [None, num_hiddens + input_dim])
+    locals()["X" + str(x+1)] =\
+        tf.placeholder("float", [None, num_hiddens + input_dim])
     # more than a bit precious, I'm afraid
     Xs.append(locals()["X" + str(x+1)])
 
@@ -75,30 +77,51 @@ Y = tf.placeholder("float", [None, output_dim])
 
 w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.001))]
 for x in xrange(num_nets):
-    w_hs.append(tf.Variable(tf.random_normal([num_hiddens + input_dim, num_hiddens], stddev=0.001)))
+    w_hs.append(
+        tf.Variable(
+            tf.random_normal(
+                [num_hiddens + input_dim, num_hiddens], stddev=0.001
+                )
+            )
+        )
 
 bs = [tf.Variable(tf.random_normal([num_hiddens], stddev=0.001))]
 for x in xrange(num_nets):
-    bs.append(tf.Variable(tf.random_normal([num_hiddens], stddev=0.001)))
+    bs.append(
+        tf.Variable(tf.random_normal([num_hiddens], stddev=0.001)))
 
 b_os = [tf.Variable(tf.random_normal([output_dim], stddev=0.001))]
 for x in xrange(num_nets):
-    b_os.append(tf.Variable(tf.random_normal([output_dim], stddev=0.001)))
+    b_os.append(
+        tf.Variable(tf.random_normal([output_dim], stddev=0.001)))
 
 w_os = [tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.001))]
 for x in xrange(num_nets):
-    w_os.append(tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.001)))
+    w_os.append(
+        tf.Variable(
+            tf.random_normal(
+                [num_hiddens, output_dim], stddev=0.001
+            )
+        )
+    )
 
-hs = [tf.nn.tanh(tf.matmul(Xs[idx], w_h) + bs[idx]) for idx, w_h in enumerate(w_hs)]
+hs = [tf.nn.tanh(
+    tf.matmul(Xs[idx], w_h) + bs[idx])
+    for idx, w_h in enumerate(w_hs)]
 py_xs = [tf.matmul(h, w_os[x]) + b_os[x] for x, h in enumerate(hs)]
 
-costs = [tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(py_x, Y)) for py_x in py_xs]
-train_ops = [tf.train.GradientDescentOptimizer(1.0).minimize(cost) for cost in costs]
+costs = [tf.reduce_mean(
+    tf.nn.softmax_cross_entropy_with_logits(py_x, Y))
+    for py_x in py_xs]
+
+train_ops = [tf.train.GradientDescentOptimizer(1.0).minimize(cost)
+             for cost in costs]
 predict_ops = [tf.argmax(py_x, 1) for py_x in py_xs]
 
 sess = tf.Session()
 init = tf.initialize_all_variables()
 sess.run(init)
+
 
 def sample(sess, seed_idx, n, vocab_size, idx_to_char):
     prev_h = np.zeros((1, vocab_size))
@@ -106,9 +129,12 @@ def sample(sess, seed_idx, n, vocab_size, idx_to_char):
     samples = []
     for x in xrange(n):
         for net_idx in xrange(num_nets):
-            curr_feed_dict = {Y: np.zeros((1, vocab_size))} # to be ignored, hopefully
+            # to be ignored, hopefully
+            curr_feed_dict = {Y: np.zeros((1, vocab_size))}
             curr_feed_dict[globals()["X" + str(net_idx)]] = prev_h
-            curr_h = np.hstack((prev_h, hs[x].eval(session=sess, feed_dict=curr_feed_dict)))
+            curr_h = np.hstack(
+                (prev_h, hs[x].eval(session=sess, feed_dict=curr_feed_dict))
+                )
             prev_h = curr_h
         y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
         p = np.exp(y) / np.sum(np.exp(y))
@@ -119,7 +145,8 @@ def sample(sess, seed_idx, n, vocab_size, idx_to_char):
 curr_trX = trXs[0][:]
 curr_teX = teXs[0][:]
 for net_idx, curr_train_ops in enumerate(train_ops):
-    if net_idx == len(train_ops) - 1: # the last one doesn't work, don't feel like debugging
+    # the last "net" doesn't work, don't feel like debugging
+    if net_idx == len(train_ops) - 1:
         break
     print "=================="
     print "net : ", net_idx
