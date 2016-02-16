@@ -1,16 +1,18 @@
 
 #
 # from https://github.com/nlintz/TensorFlow-Tutorials
+# and heavily, heavily modified
 #
 
 import tensorflow as tf
 import numpy as np
+import numpy.random as npr
 import time
 import sys
 import operator as op
 
-def onehot(idx, char_len):
-    arr = np.zeros(char_len)
+def onehot(idx, vocab_size):
+    arr = np.zeros(vocab_size)
     arr[idx] = 1.0
     return arr
 
@@ -18,8 +20,8 @@ num_nets = 25
 num_hiddens = 150
 num_epochs = 10
 
-def make_data_arr(data_list, char_len):
-    arr = np.zeros((len(data_list), char_len))
+def make_data_arr(data_list, vocab_size):
+    arr = np.zeros((len(data_list), vocab_size))
     for idx, datum in enumerate(data_list):
         arr[idx, datum] = 1.0
     return arr
@@ -28,8 +30,9 @@ with open("corpus.txt") as corpus_file:
     chars = list(corpus_file.read().lower())
     print len(chars)
     chars = chars[:200000]
-    char_len = len(set(chars))
+    vocab_size = len(set(chars))
     char_to_idx = {char:idx for idx, char in enumerate(list(set(chars)))}
+    idx_to_char = {idx:char for idx, char in enumerate(list(set(chars)))}
     trXs, teXs, trYs, teYs = [], [], [], []
     for net_idx in xrange(num_nets):
         train_len = ((19 * len(chars)) // 20) - net_idx
@@ -42,45 +45,24 @@ with open("corpus.txt") as corpus_file:
         test_list = all_data[train_len:]
 
         train_xs = map(op.itemgetter(0), train_list)
-        trXs.append(make_data_arr(train_xs, char_len))
+        trXs.append(make_data_arr(train_xs, vocab_size))
 
         train_ys = map(op.itemgetter(1), train_list)
-        trYs.append(make_data_arr(train_ys, char_len))
+        trYs.append(make_data_arr(train_ys, vocab_size))
 
         test_xs = map(op.itemgetter(0), test_list)
-        teXs.append(make_data_arr(test_xs, char_len))
+        teXs.append(make_data_arr(test_xs, vocab_size))
 
         test_ys = map(op.itemgetter(1), test_list)
-        teYs.append(make_data_arr(test_ys, char_len))
+        teYs.append(make_data_arr(test_ys, vocab_size))
 print "finished processing corpus"
 
 # taken from karpathy's blog post thing and modified:
 # https://gist.github.com/karpathy/d4dee566867f8291f086
 
-# def sample(sess, seed_ix, n):
-#     """
-#     It's going to be a lotta evals up in here
-#     """
-#     x = np.zeros((vocab_size, 1))
-#     x[seed_ix] = 1
-#     ixes = []
-#     curr_feed_dict = {X0 = something, Y = something}
-#     for x in xrange(num_nets):
-#         curr_h = hs[x].eval(session=sess, feed_dict=curr_feed_dict)
-#         curr_feed_dict = {Y: sometihng}
-#         curr_feed_dict[X] = something
-#     y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
-#     p = np.exp(y) / np.sum(np.exp(y))
-#     ix = np.random.choice(range(vocab_size), p=p.ravel())
-#     #### now loop!!!!1
-#     x = np.zeros((vocab_size, 1))
-#     x[ix] = 1
-#     ixes.append(ix)
-#     return ixes
 
-
-input_dim = char_len
-output_dim = char_len
+input_dim = vocab_size
+output_dim = vocab_size
 
 X0 = tf.placeholder("float", [None, input_dim])
 Xs = [X0]
@@ -117,6 +99,22 @@ predict_ops = [tf.argmax(py_x, 1) for py_x in py_xs]
 sess = tf.Session()
 init = tf.initialize_all_variables()
 sess.run(init)
+
+def sample(sess, seed_idx, n, vocab_size, idx_to_char):
+    prev_h = np.zeros(vocab_size)
+    prev_h[seed_idx] = 1
+    samples = []
+    for x in xrange(n):
+        for net_idx in xrange(num_nets):
+            curr_feed_dict = {Y: np.zeros(vocab_size)} # to be ignored, hopefully
+            curr_feed_dict[locals()["X" + str(net_idx)]] = prev_h
+            curr_h = np.hstack(prev_h, hs[x].eval(session=sess, feed_dict=curr_feed_dict))
+            prev_h = curr_h
+        y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
+        p = np.exp(y) / np.sum(np.exp(y))
+        curr_sample_idx = npr.choice(range(vocab_size), p=p.ravel())
+        samples.append(idx_to_char[curr_sample_idx])
+    print "".join(samples)
 
 curr_trX = trXs[0][:]
 curr_teX = teXs[0][:]
