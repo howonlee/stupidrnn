@@ -75,32 +75,32 @@ for x in xrange(num_nets):
 
 Y = tf.placeholder("float", [None, output_dim])
 
-w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.001))]
+w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.0001))]
 for x in xrange(num_nets):
     w_hs.append(
         tf.Variable(
             tf.random_normal(
-                [num_hiddens + input_dim, num_hiddens], stddev=0.001
+                [num_hiddens + input_dim, num_hiddens], stddev=0.0001
                 )
             )
         )
 
-bs = [tf.Variable(tf.random_normal([num_hiddens], stddev=0.001))]
+bs = [tf.Variable(tf.random_normal([num_hiddens], stddev=0.0001))]
 for x in xrange(num_nets):
     bs.append(
-        tf.Variable(tf.random_normal([num_hiddens], stddev=0.001)))
+        tf.Variable(tf.random_normal([num_hiddens], stddev=0.0001)))
 
-b_os = [tf.Variable(tf.random_normal([output_dim], stddev=0.001))]
+b_os = [tf.Variable(tf.random_normal([output_dim], stddev=0.0001))]
 for x in xrange(num_nets):
     b_os.append(
-        tf.Variable(tf.random_normal([output_dim], stddev=0.001)))
+        tf.Variable(tf.random_normal([output_dim], stddev=0.0001)))
 
-w_os = [tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.001))]
+w_os = [tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.0001))]
 for x in xrange(num_nets):
     w_os.append(
         tf.Variable(
             tf.random_normal(
-                [num_hiddens, output_dim], stddev=0.001
+                [num_hiddens, output_dim], stddev=0.0001
             )
         )
     )
@@ -175,4 +175,4 @@ for net_idx, curr_train_ops in enumerate(train_ops):
 
 seeds = [char_to_idx[char] for char in chars[:num_nets+1]]
 # and merrily use our global state this way...?
-sample(sess, seeds, 200, vocab_size, idx_to_char)
+sample(sess, seeds, 40000, vocab_size, idx_to_char)
