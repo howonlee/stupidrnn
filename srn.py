@@ -16,7 +16,7 @@ def onehot(idx, vocab_size):
     arr[idx] = 1.0
     return arr
 
-num_nets = 25
+num_nets = 2
 num_hiddens = 150
 num_epochs = 10
 
@@ -101,14 +101,14 @@ init = tf.initialize_all_variables()
 sess.run(init)
 
 def sample(sess, seed_idx, n, vocab_size, idx_to_char):
-    prev_h = np.zeros(vocab_size)
-    prev_h[seed_idx] = 1
+    prev_h = np.zeros((1, vocab_size))
+    prev_h[0, seed_idx] = 1.0
     samples = []
     for x in xrange(n):
         for net_idx in xrange(num_nets):
-            curr_feed_dict = {Y: np.zeros(vocab_size)} # to be ignored, hopefully
-            curr_feed_dict[locals()["X" + str(net_idx)]] = prev_h
-            curr_h = np.hstack(prev_h, hs[x].eval(session=sess, feed_dict=curr_feed_dict))
+            curr_feed_dict = {Y: np.zeros((1, vocab_size))} # to be ignored, hopefully
+            curr_feed_dict[globals()["X" + str(net_idx)]] = prev_h
+            curr_h = np.hstack((prev_h, hs[x].eval(session=sess, feed_dict=curr_feed_dict)))
             prev_h = curr_h
         y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
         p = np.exp(y) / np.sum(np.exp(y))
@@ -131,10 +131,11 @@ for net_idx, curr_train_ops in enumerate(train_ops):
             tr_fd = {Y: trYs[net_idx][start:end]}
             tr_fd[locals()["X" + str(net_idx)]] = curr_trX[start:end]
             sess.run(curr_train_ops, feed_dict=tr_fd)
+        # use prediction accuracy because I can't be bothered to do perplexity properly right now
         curr_acc = np.mean(np.argmax(teYs[net_idx], axis=1) ==
                            sess.run(predict_ops[net_idx], feed_dict=te_fd))
         print i, curr_acc, time.clock()
-        # use prediction accuracy because I can't be bothered
+        seed_idx = npr.randint(0, vocab_size-1)
     total_tr_fd = {Y: trYs[net_idx]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
     # print len(trXs[net_idx+1]), len(hs[net_idx].eval(session=sess, feed_dict=total_tr_fd))
@@ -142,3 +143,6 @@ for net_idx, curr_train_ops in enumerate(train_ops):
     if net_idx < (num_nets-1):
         curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[1:]))
         curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)[:]))
+
+# and merrily use our global state this way...?
+sample(sess, seed_idx, 200, vocab_size, idx_to_char)
