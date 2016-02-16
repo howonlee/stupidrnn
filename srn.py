@@ -15,7 +15,7 @@ def onehot(idx, char_len):
     return arr
 
 num_nets = 25
-num_hiddens = 200
+num_hiddens = 100
 num_epochs = 1
 
 def make_data_arr(data_list, char_len):
@@ -31,15 +31,15 @@ with open("corpus.txt") as corpus_file:
     char_len = len(set(chars))
     char_to_idx = {char:idx for idx, char in enumerate(list(set(chars)))}
     trXs, teXs, trYs, teYs = [], [], [], []
-    train_len = 190000
     for net_idx in xrange(num_nets):
         print net_idx
         all_data = []
         # for fst, snd in zip(chars, chars[1:]):
         for fst, snd in zip(chars, chars[net_idx+1:]):
             all_data.append((char_to_idx[fst], char_to_idx[snd]))
-        train_list = all_data[:train_len]
-        test_list = all_data[train_len:]
+        train_len = (19 * len(all_data)) // 20 # janky fix to net layer problem:
+        train_list = all_data[:train_len][net_idx:]
+        test_list = all_data[train_len:][net_idx:]
 
         train_xs = map(op.itemgetter(0), train_list)
         trXs.append(make_data_arr(train_xs, char_len))
@@ -63,21 +63,20 @@ print "finished processing corpus"
 #     """
 #     x = np.zeros((vocab_size, 1))
 #     x[seed_ix] = 1
-#     for x in xrange(n):
-#         ixes = []
-#         curr_feed_dict = {X0 = something, Y = something}
-#         for x in xrange(num_nets):
-#             curr_h = hs[x].eval(session=sess, feed_dict=curr_feed_dict)
-#             curr_feed_dict = {Y: sometihng}
-#             curr_feed_dict[X] = something
-#         y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
-#         p = np.exp(y) / np.sum(np.exp(y))
-#         ix = np.random.choice(range(vocab_size), p=p.ravel())
-#         #### now loop!!!!1
-#         x = np.zeros((vocab_size, 1))
-#         x[ix] = 1
-#         ixes.append(ix)
-#         print res # pipe the results somewhere
+#     ixes = []
+#     curr_feed_dict = {X0 = something, Y = something}
+#     for x in xrange(num_nets):
+#         curr_h = hs[x].eval(session=sess, feed_dict=curr_feed_dict)
+#         curr_feed_dict = {Y: sometihng}
+#         curr_feed_dict[X] = something
+#     y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
+#     p = np.exp(y) / np.sum(np.exp(y))
+#     ix = np.random.choice(range(vocab_size), p=p.ravel())
+#     #### now loop!!!!1
+#     x = np.zeros((vocab_size, 1))
+#     x[ix] = 1
+#     ixes.append(ix)
+#     return ixes
 
 
 input_dim = char_len
@@ -112,7 +111,7 @@ hs = [tf.nn.tanh(tf.matmul(Xs[idx], w_h) + bs[idx]) for idx, w_h in enumerate(w_
 py_xs = [tf.matmul(h, w_os[x]) + b_os[x] for x, h in enumerate(hs)]
 
 costs = [tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(py_x, Y)) for py_x in py_xs]
-train_ops = [tf.train.GradientDescentOptimizer(0.4).minimize(cost) for cost in costs]
+train_ops = [tf.train.GradientDescentOptimizer(1.0).minimize(cost) for cost in costs]
 predict_ops = [tf.argmax(py_x, 1) for py_x in py_xs]
 
 sess = tf.Session()
@@ -142,5 +141,5 @@ for net_idx, curr_train_ops in enumerate(train_ops):
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
     # fix this properly
     if net_idx < (num_nets-1):
-        curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)))
+        curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[2:]))
         curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)[1:]))
