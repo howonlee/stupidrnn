@@ -17,8 +17,9 @@ def onehot(idx, vocab_size):
     return arr
 
 num_nets = 10
-num_hiddens = 500
+num_hiddens = 150
 num_epochs = 100
+minibatch_size = 5000
 
 
 def make_data_arr(data_list, vocab_size):
@@ -124,7 +125,6 @@ sess.run(init)
 
 
 def sample(sess, seeds, n, vocab_size, idx_to_char):
-    samples = []
     for x in xrange(n):
         curr_feed_dict = {globals()["Y"]: np.zeros((1, vocab_size))}
         for net_idx in xrange(num_nets):
@@ -141,9 +141,8 @@ def sample(sess, seeds, n, vocab_size, idx_to_char):
         y = py_xs[-2].eval(session=sess, feed_dict=curr_feed_dict)
         p = np.exp(y) / np.sum(np.exp(y))
         curr_sample_idx = npr.choice(range(vocab_size), p=p.ravel())
-        samples.append(idx_to_char[curr_sample_idx])
+        print idx_to_char[curr_sample_idx],
         seeds.insert(0, curr_sample_idx)
-    print "".join(samples)
 
 curr_trX = trXs[0][:]
 curr_teX = teXs[0][:]
@@ -152,12 +151,12 @@ for net_idx, curr_train_ops in enumerate(train_ops):
     if net_idx == len(train_ops) - 1:
         break
     print "=================="
-    print "net : ", net_idx
+    print "net : ", net_idx, " / ", num_nets
     print "=================="
     te_fd = {Y: teYs[net_idx]}
     te_fd[locals()["X" + str(net_idx)]] = curr_teX[:]
     for i in range(num_epochs):
-        for start, end in zip(range(0, len(trXs[net_idx]), 500), range(500, len(trXs[net_idx]), 500)):
+        for start, end in zip(range(0, len(trXs[net_idx]), minibatch_size), range(minibatch_size, len(trXs[net_idx]), minibatch_size)):
             tr_fd = {Y: trYs[net_idx][start:end]}
             tr_fd[locals()["X" + str(net_idx)]] = curr_trX[start:end]
             sess.run(curr_train_ops, feed_dict=tr_fd)
@@ -175,4 +174,4 @@ for net_idx, curr_train_ops in enumerate(train_ops):
 
 seeds = [char_to_idx[char] for char in chars[:num_nets+1]]
 # and merrily use our global state this way...?
-sample(sess, seeds, 40000, vocab_size, idx_to_char)
+sample(sess, seeds, 2000, vocab_size, idx_to_char)
