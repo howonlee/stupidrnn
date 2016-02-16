@@ -123,28 +123,29 @@ init = tf.initialize_all_variables()
 sess.run(init)
 
 
-def sample(sess, seed_idx, n, vocab_size, idx_to_char):
-    prev_h = np.zeros((1, vocab_size))
-    prev_h[0, seed_idx] = 1.0
+def sample(sess, seeds, n, vocab_size, idx_to_char):
     samples = []
     for x in xrange(n):
+        curr_feed_dict = {globals()["Y"]: np.zeros((1, vocab_size))}
         for net_idx in xrange(num_nets):
             # to be ignored, hopefully
-            curr_feed_dict = {globals()["Y"]: np.zeros((1, vocab_size))}
-            curr_feed_dict[globals()["X" + str(net_idx)]] = prev_h
-            print curr_feed_dict
-            curr_h = np.hstack(
-                (prev_h, hs[x].eval(session=sess, feed_dict=curr_feed_dict))
-                )
-            prev_h = curr_h
-            print "^^^^^^^^^^^^^^^^^^^^^^"
-            print "^^^^^^^^^^^^^^^^^^^^^^"
-            print "^^^^^^^^^^^^^^^^^^^^^^"
-            print "^^^^^^^^^^^^^^^^^^^^^^"
-        y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
+            datum = np.zeros((1, vocab_size))
+            datum[0, seeds[-net_idx-1]] = 1.0
+            if net_idx == 0:
+                next_datum = datum
+            else:
+                next_datum = np.hstack((datum, new_h))
+            curr_feed_dict[globals()["X" + str(net_idx)]] = next_datum
+            print "X" + str(net_idx)
+            new_h = hs[x].eval(session=sess, feed_dict=curr_feed_dict)
+        print curr_feed_dict
+        # remember, we don't use that last net
+        # yes, it's idiotic
+        y = py_xs[-2].eval(session=sess, feed_dict=curr_feed_dict)
         p = np.exp(y) / np.sum(np.exp(y))
         curr_sample_idx = npr.choice(range(vocab_size), p=p.ravel())
         samples.append(idx_to_char[curr_sample_idx])
+        seeds.insert(0, curr_sample_idx)
     print "".join(samples)
 
 curr_trX = trXs[0][:]
@@ -167,7 +168,6 @@ for net_idx, curr_train_ops in enumerate(train_ops):
         curr_acc = np.mean(np.argmax(teYs[net_idx], axis=1) ==
                            sess.run(predict_ops[net_idx], feed_dict=te_fd))
         print i, curr_acc, time.clock()
-        seed_idx = npr.randint(0, vocab_size-1)
     total_tr_fd = {Y: trYs[net_idx]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
     # print len(trXs[net_idx+1]), len(hs[net_idx].eval(session=sess, feed_dict=total_tr_fd))
@@ -176,5 +176,6 @@ for net_idx, curr_train_ops in enumerate(train_ops):
         curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[1:]))
         curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)[:]))
 
+seeds = [char_to_idx[char] for char in chars[:num_nets+1]]
 # and merrily use our global state this way...?
-sample(sess, seed_idx, 200, vocab_size, idx_to_char)
+sample(sess, seeds, 200, vocab_size, idx_to_char)
