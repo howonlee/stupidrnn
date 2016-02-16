@@ -15,8 +15,8 @@ def onehot(idx, char_len):
     return arr
 
 num_nets = 25
-num_hiddens = 100
-num_epochs = 1
+num_hiddens = 150
+num_epochs = 10
 
 def make_data_arr(data_list, char_len):
     arr = np.zeros((len(data_list), char_len))
