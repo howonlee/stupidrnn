@@ -13,9 +13,9 @@ def onehot(idx, char_len):
     arr[idx] = 1.0
     return arr
 
-num_nets = 15
-num_hiddens = 250
-num_epochs = 40
+num_nets = 25
+num_hiddens = 100
+num_epochs = 50
 
 def make_data_arr(data_list, char_len):
     arr = np.zeros((len(data_list), char_len))
@@ -24,7 +24,7 @@ def make_data_arr(data_list, char_len):
     return arr
 
 with open("corpus.txt") as corpus_file:
-    chars = list(corpus_file.read())
+    chars = list(corpus_file.read().lower())
     print len(chars)
     chars = chars[:200000]
     char_len = len(set(chars))
@@ -56,23 +56,26 @@ print "finished processing corpus"
 # taken from karpathy's blog post thing and modified:
 # https://gist.github.com/karpathy/d4dee566867f8291f086
 
-def sample(seed_ix, n):
-    """
-    It's going to be a lotta evals up in here
-    """
-    x = np.zeros((vocab_size, 1))
-    x[seed_ix] = 1
-    ixes = []
-    curr_h = hs[0].eval(session=sess, feed_dict=total_tr_fd)[2:]))
-    for x in xrange(1, num_nets):
-        curr_h = hs[0].eval(session=sess, feed_dict=total_tr_fd)[2:]))
-    y = np.dot(Why, h) + by
-    p = np.exp(y) / np.sum(np.exp(y))
-    ix = np.random.choice(range(vocab_size), p=p.ravel())
-    x = np.zeros((vocab_size, 1))
-    x[ix] = 1
-    ixes.append(ix)
-    return ixes
+# def sample(sess, seed_ix, n):
+#     """
+#     It's going to be a lotta evals up in here
+#     """
+#     x = np.zeros((vocab_size, 1))
+#     x[seed_ix] = 1
+#     ixes = []
+#     curr_feed_dict = {X0 = something, Y = something}
+#     for x in xrange(num_nets):
+#         curr_h = hs[x].eval(session=sess, feed_dict=curr_feed_dict)
+#         curr_feed_dict = {Y: sometihng}
+#         curr_feed_dict[X] = something
+#     y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
+#     p = np.exp(y) / np.sum(np.exp(y))
+#     ix = np.random.choice(range(vocab_size), p=p.ravel())
+#     #### now loop!!!!1
+#     x = np.zeros((vocab_size, 1))
+#     x[ix] = 1
+#     ixes.append(ix)
+#     return ixes
 
 
 input_dim = char_len
@@ -87,19 +90,27 @@ for x in xrange(num_nets):
 
 Y = tf.placeholder("float", [None, output_dim])
 
-w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.01))]
+w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.001))]
 for x in xrange(num_nets):
-    w_hs.append(tf.Variable(tf.random_normal([num_hiddens + input_dim, num_hiddens], stddev=0.01)))
+    w_hs.append(tf.Variable(tf.random_normal([num_hiddens + input_dim, num_hiddens], stddev=0.001)))
 
-w_os = [tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.01))]
+bs = [tf.Variable(tf.random_normal([num_hiddens], stddev=0.001))]
 for x in xrange(num_nets):
-    w_os.append(tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.01)))
+    bs.append(tf.Variable(tf.random_normal([num_hiddens], stddev=0.001)))
 
-hs = [tf.nn.sigmoid(tf.matmul(Xs[idx], w_h)) for idx, w_h in enumerate(w_hs)]
-py_xs = [tf.matmul(h, w_os[x]) for x, h in enumerate(hs)]
+b_os = [tf.Variable(tf.random_normal([output_dim], stddev=0.001))]
+for x in xrange(num_nets):
+    b_os.append(tf.Variable(tf.random_normal([output_dim], stddev=0.001)))
+
+w_os = [tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.001))]
+for x in xrange(num_nets):
+    w_os.append(tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.001)))
+
+hs = [tf.nn.tanh(tf.matmul(Xs[idx], w_h) + bs[idx]) for idx, w_h in enumerate(w_hs)]
+py_xs = [tf.matmul(h, w_os[x]) + b_os[x] for x, h in enumerate(hs)]
 
 costs = [tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(py_x, Y)) for py_x in py_xs]
-train_ops = [tf.train.GradientDescentOptimizer(0.1).minimize(cost) for cost in costs]
+train_ops = [tf.train.GradientDescentOptimizer(1.0).minimize(cost) for cost in costs]
 predict_ops = [tf.argmax(py_x, 1) for py_x in py_xs]
 
 sess = tf.Session()
@@ -109,13 +120,15 @@ sess.run(init)
 curr_trX = trXs[0][:]
 curr_teX = teXs[0][:]
 for net_idx, curr_train_ops in enumerate(train_ops):
+    if net_idx == len(train_ops) - 1: # the last one doesn't work, don't feel like debugging
+        break
     print "=================="
     print "net : ", net_idx
     print "=================="
     te_fd = {Y: teYs[net_idx]}
     te_fd[locals()["X" + str(net_idx)]] = curr_teX[:]
     for i in range(num_epochs):
-        for start, end in zip(range(0, len(trXs[net_idx]), 128), range(128, len(trXs[net_idx]), 128)):
+        for start, end in zip(range(0, len(trXs[net_idx]), 500), range(500, len(trXs[net_idx]), 500)):
             tr_fd = {Y: trYs[net_idx][start:end]}
             tr_fd[locals()["X" + str(net_idx)]] = curr_trX[start:end]
             sess.run(curr_train_ops, feed_dict=tr_fd)
