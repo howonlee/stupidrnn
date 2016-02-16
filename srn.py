@@ -14,13 +14,21 @@ def onehot(idx, char_len):
     return arr
 
 num_nets = 10
-num_hiddens = 200
+num_hiddens = 1000
 num_epochs = 30
 
+def make_data_arr(data_list, char_len):
+    arr = np.zeros((len(data_list), char_len))
+    for idx, datum in enumerate(data_list):
+        arr[idx, datum] = 1.0
+    return arr
+
 with open("corpus.txt") as corpus_file:
-    chars = list(corpus_file.read())[:300000]
+    chars = list(corpus_file.read())
+    print len(chars)
+    chars = chars[:500000]
     char_len = len(set(chars))
-    char_to_idx = {char:onehot(idx, char_len) for idx, char in enumerate(list(set(chars)))}
+    char_to_idx = {char:idx for idx, char in enumerate(list(set(chars)))}
     trXs, teXs, trYs, teYs = [], [], [], []
     for net_idx in xrange(num_nets):
         print net_idx
@@ -31,16 +39,18 @@ with open("corpus.txt") as corpus_file:
         train_len = (19 * len(all_data)) // 20
         train_list = all_data[:train_len][net_idx:]
         test_list = all_data[train_len:][net_idx:]
-        trXs.append(np.vstack(tuple(map(op.itemgetter(0), train_list))))
-        teXs.append(np.vstack(tuple(map(op.itemgetter(0), test_list))))
-        trYs.append(np.vstack(tuple(map(op.itemgetter(1), train_list))))
-        teYs.append(np.vstack(tuple(map(op.itemgetter(1), test_list))))
-    # for member in trXs:
-    #     print list(member[:5])
-    # for member in teXs:
-    #     print list(member[:5])
-    # for member in teXs:
-    #     print member.shape
+
+        train_xs = map(op.itemgetter(0), train_list)
+        trXs.append(make_data_arr(train_xs, char_len))
+
+        train_ys = map(op.itemgetter(1), train_list)
+        trYs.append(make_data_arr(train_ys, char_len))
+
+        test_xs = map(op.itemgetter(0), test_list)
+        teXs.append(make_data_arr(test_xs, char_len))
+
+        test_ys = map(op.itemgetter(1), test_list)
+        teYs.append(make_data_arr(test_ys, char_len))
 print "finished processing corpus"
 
 
