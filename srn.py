@@ -13,9 +13,9 @@ def onehot(idx, char_len):
     arr[idx] = 1.0
     return arr
 
-num_nets = 10
-num_hiddens = 1000
-num_epochs = 30
+num_nets = 15
+num_hiddens = 70
+num_epochs = 40
 
 def make_data_arr(data_list, char_len):
     arr = np.zeros((len(data_list), char_len))
@@ -26,7 +26,7 @@ def make_data_arr(data_list, char_len):
 with open("corpus.txt") as corpus_file:
     chars = list(corpus_file.read())
     print len(chars)
-    chars = chars[:500000]
+    chars = chars[:200000]
     char_len = len(set(chars))
     char_to_idx = {char:idx for idx, char in enumerate(list(set(chars)))}
     trXs, teXs, trYs, teYs = [], [], [], []
@@ -78,7 +78,7 @@ hs = [tf.nn.sigmoid(tf.matmul(Xs[idx], w_h)) for idx, w_h in enumerate(w_hs)]
 py_xs = [tf.matmul(h, w_os[x]) for x, h in enumerate(hs)]
 
 costs = [tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(py_x, Y)) for py_x in py_xs]
-train_ops = [tf.train.GradientDescentOptimizer(0.05).minimize(cost) for cost in costs]
+train_ops = [tf.train.GradientDescentOptimizer(0.1).minimize(cost) for cost in costs]
 predict_ops = [tf.argmax(py_x, 1) for py_x in py_xs]
 
 sess = tf.Session()
