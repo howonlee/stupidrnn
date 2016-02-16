@@ -130,12 +130,17 @@ def sample(sess, seed_idx, n, vocab_size, idx_to_char):
     for x in xrange(n):
         for net_idx in xrange(num_nets):
             # to be ignored, hopefully
-            curr_feed_dict = {Y: np.zeros((1, vocab_size))}
+            curr_feed_dict = {globals()["Y"]: np.zeros((1, vocab_size))}
             curr_feed_dict[globals()["X" + str(net_idx)]] = prev_h
+            print curr_feed_dict
             curr_h = np.hstack(
                 (prev_h, hs[x].eval(session=sess, feed_dict=curr_feed_dict))
                 )
             prev_h = curr_h
+            print "^^^^^^^^^^^^^^^^^^^^^^"
+            print "^^^^^^^^^^^^^^^^^^^^^^"
+            print "^^^^^^^^^^^^^^^^^^^^^^"
+            print "^^^^^^^^^^^^^^^^^^^^^^"
         y = py_xs[-1].eval(session=sess, feed_dict=curr_feed_dict)
         p = np.exp(y) / np.sum(np.exp(y))
         curr_sample_idx = npr.choice(range(vocab_size), p=p.ravel())
