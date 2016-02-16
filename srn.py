@@ -32,12 +32,12 @@ with open("corpus.txt") as corpus_file:
     char_to_idx = {char:idx for idx, char in enumerate(list(set(chars)))}
     trXs, teXs, trYs, teYs = [], [], [], []
     for net_idx in xrange(num_nets):
+        train_len = ((19 * len(chars)) // 20) - net_idx
         print net_idx
         all_data = []
         # for fst, snd in zip(chars, chars[1:]):
         for fst, snd in zip(chars, chars[net_idx+1:]):
             all_data.append((char_to_idx[fst], char_to_idx[snd]))
-        train_len = (19 * len(all_data)) // 20 # janky fix to net layer problem:
         train_list = all_data[:train_len]
         test_list = all_data[train_len:]
 
@@ -139,7 +139,8 @@ for net_idx, curr_train_ops in enumerate(train_ops):
         # use prediction accuracy because I can't be bothered
     total_tr_fd = {Y: trYs[net_idx]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
-    # fix this properly
+    # print len(trXs[net_idx+1]), len(hs[net_idx].eval(session=sess, feed_dict=total_tr_fd))
+    # print len(teXs[net_idx+1]), len(hs[net_idx].eval(session=sess, feed_dict=te_fd))
     if net_idx < (num_nets-1):
         curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[1:]))
         curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)[:]))
