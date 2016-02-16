@@ -128,7 +128,6 @@ def sample(sess, seeds, n, vocab_size, idx_to_char):
     for x in xrange(n):
         curr_feed_dict = {globals()["Y"]: np.zeros((1, vocab_size))}
         for net_idx in xrange(num_nets):
-            # to be ignored, hopefully
             datum = np.zeros((1, vocab_size))
             datum[0, seeds[-net_idx-1]] = 1.0
             if net_idx == 0:
@@ -136,9 +135,7 @@ def sample(sess, seeds, n, vocab_size, idx_to_char):
             else:
                 next_datum = np.hstack((datum, new_h))
             curr_feed_dict[globals()["X" + str(net_idx)]] = next_datum
-            print "X" + str(net_idx)
-            new_h = hs[x].eval(session=sess, feed_dict=curr_feed_dict)
-        print curr_feed_dict
+            new_h = hs[net_idx].eval(session=sess, feed_dict=curr_feed_dict)
         # remember, we don't use that last net
         # yes, it's idiotic
         y = py_xs[-2].eval(session=sess, feed_dict=curr_feed_dict)
