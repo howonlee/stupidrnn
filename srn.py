@@ -14,7 +14,7 @@ def onehot(idx, char_len):
     return arr
 
 num_nets = 15
-num_hiddens = 70
+num_hiddens = 250
 num_epochs = 40
 
 def make_data_arr(data_list, char_len):
@@ -52,6 +52,27 @@ with open("corpus.txt") as corpus_file:
         test_ys = map(op.itemgetter(1), test_list)
         teYs.append(make_data_arr(test_ys, char_len))
 print "finished processing corpus"
+
+# taken from karpathy's blog post thing and modified:
+# https://gist.github.com/karpathy/d4dee566867f8291f086
+
+def sample(seed_ix, n):
+    """
+    It's going to be a lotta evals up in here
+    """
+    x = np.zeros((vocab_size, 1))
+    x[seed_ix] = 1
+    ixes = []
+    curr_h = hs[0].eval(session=sess, feed_dict=total_tr_fd)[2:]))
+    for x in xrange(1, num_nets):
+        curr_h = hs[0].eval(session=sess, feed_dict=total_tr_fd)[2:]))
+    y = np.dot(Why, h) + by
+    p = np.exp(y) / np.sum(np.exp(y))
+    ix = np.random.choice(range(vocab_size), p=p.ravel())
+    x = np.zeros((vocab_size, 1))
+    x[ix] = 1
+    ixes.append(ix)
+    return ixes
 
 
 input_dim = char_len
