@@ -30,7 +30,7 @@ def dense_to_one_hot(labels_dense, num_classes):
 with open("corpus.txt") as corpus_file:
     chars = list(corpus_file.read().lower())
     print len(chars)
-    chars = chars[:100000]
+    chars = chars[:1000000]
     vocab_size = len(set(chars))
     char_to_idx = {char: idx for idx, char in enumerate(list(set(chars)))}
     idx_to_char = {idx: char for idx, char in enumerate(list(set(chars)))}
