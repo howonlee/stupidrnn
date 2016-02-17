@@ -18,8 +18,8 @@ def onehot(idx, vocab_size):
 
 num_nets = 10
 num_hiddens = 150
-num_epochs = 100
-minibatch_size = 5000
+num_epochs = 10
+minibatch_size = 500
 
 
 def make_data_arr(data_list, vocab_size):
@@ -36,12 +36,11 @@ with open("corpus.txt") as corpus_file:
     char_to_idx = {char: idx for idx, char in enumerate(list(set(chars)))}
     idx_to_char = {idx: char for idx, char in enumerate(list(set(chars)))}
     trXs, teXs, trYs, teYs = [], [], [], []
+    train_len = ((19 * len(chars)) // 20)
     for net_idx in xrange(num_nets):
-        train_len = ((19 * len(chars)) // 20) - net_idx
         print net_idx
         all_data = []
-        # for fst, snd in zip(chars, chars[1:]):
-        for fst, snd in zip(chars, chars[net_idx+1:]):
+        for fst, snd in zip(chars, chars[1:]):
             all_data.append((char_to_idx[fst], char_to_idx[snd]))
         train_list = all_data[:train_len]
         test_list = all_data[train_len:]
@@ -58,10 +57,6 @@ with open("corpus.txt") as corpus_file:
         test_ys = map(op.itemgetter(1), test_list)
         teYs.append(make_data_arr(test_ys, vocab_size))
 print "finished processing corpus"
-
-# taken from karpathy's blog post thing and modified:
-# https://gist.github.com/karpathy/d4dee566867f8291f086
-
 
 input_dim = vocab_size
 output_dim = vocab_size
@@ -166,11 +161,9 @@ for net_idx, curr_train_ops in enumerate(train_ops):
         print i, " / ", num_epochs, " || ",  curr_acc, time.clock()
     total_tr_fd = {Y: trYs[net_idx]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
-    # print len(trXs[net_idx+1]), len(hs[net_idx].eval(session=sess, feed_dict=total_tr_fd))
-    # print len(teXs[net_idx+1]), len(hs[net_idx].eval(session=sess, feed_dict=te_fd))
     if net_idx < (num_nets-1):
-        curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[1:]))
-        curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)[:]))
+        curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)))
+        curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)))
 
 seeds = [char_to_idx[char] for char in chars[:num_nets+1]]
 # and merrily use our global state this way...?
