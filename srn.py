@@ -16,9 +16,9 @@ def onehot(idx, vocab_size):
     arr[idx] = 1.0
     return arr
 
-num_nets = 10
-num_hiddens = 150
-num_epochs = 10
+num_nets = 30
+num_hiddens = 2000
+num_epochs = 5
 minibatch_size = 500
 
 
@@ -42,8 +42,8 @@ with open("corpus.txt") as corpus_file:
         all_data = []
         for fst, snd in zip(chars, chars[1:]):
             all_data.append((char_to_idx[fst], char_to_idx[snd]))
-        train_list = all_data[:train_len]
-        test_list = all_data[train_len:]
+        train_list = all_data[:train_len][net_idx:]
+        test_list = all_data[train_len:][net_idx:]
 
         train_xs = map(op.itemgetter(0), train_list)
         trXs.append(make_data_arr(train_xs, vocab_size))
@@ -161,9 +161,11 @@ for net_idx, curr_train_ops in enumerate(train_ops):
         print i, " / ", num_epochs, " || ",  curr_acc, time.clock()
     total_tr_fd = {Y: trYs[net_idx]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
+    print hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[:-1].shape
+    print trXs[net_idx+1].shape
     if net_idx < (num_nets-1):
-        curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)))
-        curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)))
+        curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[:-1]))
+        curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)[:-1]))
 
 seeds = [char_to_idx[char] for char in chars[:num_nets+1]]
 # and merrily use our global state this way...?
