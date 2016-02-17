@@ -7,4 +7,4 @@ You could "unroll" the hidden units in that fashion for 50 layers and it will pe
 
 But the thing I made was not a full Elman net, since it only fed the hidden layer back to itself, not adding any more sequential input. Therefore, it wasn't a recurrent net, just a neat trick.
 
-Given that, could you try to "unroll" an Elman net in that greedy layerwise fashion that seemed to be so successful at transducing information through many, many, many layers? It turns out that the answer is yes. And here's some results for language modelling based upon that intuition.
+Given that, could you try to "unroll" an Elman net in that greedy layerwise fashion that seemed to be so successful at transducing information through many, many, many layers? It turns out that the answer is yes, and it's here in this repo. And here's some results for language modelling based upon that intuition.

@@ -20,7 +20,7 @@ def onehot(idx, vocab_size):
 num_nets = 10
 num_hiddens = 150
 num_epochs = 10
-minibatch_size = 500
+minibatch_size = 128
 
 
 def make_data_arr(data_list, vocab_size):
@@ -32,7 +32,7 @@ def make_data_arr(data_list, vocab_size):
 with open("corpus.txt") as corpus_file:
     chars = list(corpus_file.read().lower())
     print len(chars)
-    chars = chars[:200000]
+    chars = chars[:100000]
     vocab_size = len(set(chars))
     char_to_idx = {char: idx for idx, char in enumerate(list(set(chars)))}
     idx_to_char = {idx: char for idx, char in enumerate(list(set(chars)))}
@@ -74,44 +74,40 @@ Y = tf.placeholder("float", [None, output_dim])
 
 w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.0001))]
 for x in xrange(num_nets):
+    extremal_val = np.sqrt(6) / np.sqrt(num_hiddens + input_dim + num_hiddens)
     w_hs.append(
         tf.Variable(
-            tf.random_normal(
-                [num_hiddens + input_dim, num_hiddens], stddev=0.0001
+            tf.random_uniform(
+                [num_hiddens + input_dim, num_hiddens],
+                minval=-extremal_val,
+                maxval=extremal_val
                 )
             )
         )
 
-bs = [tf.Variable(tf.random_normal([num_hiddens], stddev=0.0001))]
-for x in xrange(num_nets):
-    bs.append(
-        tf.Variable(tf.random_normal([num_hiddens], stddev=0.0001)))
-
-b_os = [tf.Variable(tf.random_normal([output_dim], stddev=0.0001))]
-for x in xrange(num_nets):
-    b_os.append(
-        tf.Variable(tf.random_normal([output_dim], stddev=0.0001)))
-
 w_os = [tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.0001))]
 for x in xrange(num_nets):
+    extremal_val = np.sqrt(6) / np.sqrt(num_hiddens + output_dim)
     w_os.append(
         tf.Variable(
-            tf.random_normal(
-                [num_hiddens, output_dim], stddev=0.0001
+            tf.random_uniform(
+                [num_hiddens, output_dim],
+                minval=-extremal_val,
+                maxval=extremal_val
             )
         )
     )
 
 hs = [tf.nn.tanh(
-    tf.matmul(Xs[idx], w_h) + bs[idx])
+    tf.matmul(Xs[idx], w_h))
     for idx, w_h in enumerate(w_hs)]
-py_xs = [tf.matmul(h, w_os[x]) + b_os[x] for x, h in enumerate(hs)]
+py_xs = [tf.matmul(h, w_os[x]) for x, h in enumerate(hs)]
 
 costs = [tf.reduce_mean(
     tf.nn.softmax_cross_entropy_with_logits(py_x, Y))
     for py_x in py_xs]
 
-train_ops = [tf.train.GradientDescentOptimizer(1.0).minimize(cost)
+train_ops = [tf.train.AdamOptimizer().minimize(cost)
              for cost in costs]
 predict_ops = [tf.argmax(py_x, 1) for py_x in py_xs]
 
