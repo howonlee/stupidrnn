@@ -17,9 +17,9 @@ def onehot(idx, vocab_size):
     arr[idx] = 1.0
     return arr
 
-num_nets = 20
-num_hiddens = 200
-num_epochs = 30
+num_nets = 10
+num_hiddens = 150
+num_epochs = 10
 minibatch_size = 500
 
 
