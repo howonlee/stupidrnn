@@ -12,9 +12,9 @@ import sys
 import operator as op
 
 
-num_nets = 10
-num_hiddens = 150
-num_epochs = 1
+num_nets = 4
+num_hiddens = 2000
+num_epochs = 12
 minibatch_size = 128
 
 
@@ -28,13 +28,14 @@ def dense_to_one_hot(labels_dense, num_classes):
     return labels_one_hot
 
 with open("corpus.txt") as corpus_file:
-    chars = list(corpus_file.read().lower())
+    chars = corpus_file.read().split()
     print len(chars)
-    chars = chars[:1000000]
+    # chars = chars[:3000]
+    chars = chars[:10000]
     vocab_size = len(set(chars))
     char_to_idx = {char: idx for idx, char in enumerate(list(set(chars)))}
     idx_to_char = {idx: char for idx, char in enumerate(list(set(chars)))}
-    train_len = ((19 * len(chars)) // 20)
+    train_len = ((9 * len(chars)) // 10)
     all_data = []
     for fst, snd in zip(chars, chars[1:]):
         all_data.append((char_to_idx[fst], char_to_idx[snd]))
