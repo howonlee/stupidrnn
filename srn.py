@@ -23,11 +23,14 @@ num_epochs = 10
 minibatch_size = 128
 
 
-def make_data_arr(data_list, vocab_size):
-    arr = np.zeros((len(data_list), vocab_size))
-    for idx, datum in enumerate(data_list):
-        arr[idx, datum] = 1.0
-    return arr
+def dense_to_one_hot(labels_dense, num_classes):
+    """Convert class labels from scalars to one-hot vectors."""
+    """ Stolen from some version of TF docs """
+    num_labels = labels_dense.shape[0]
+    index_offset = np.arange(num_labels) * num_classes
+    labels_one_hot = np.zeros((num_labels, num_classes))
+    labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
+    return labels_one_hot
 
 with open("corpus.txt") as corpus_file:
     chars = list(corpus_file.read().lower())
@@ -46,17 +49,17 @@ with open("corpus.txt") as corpus_file:
         train_list = all_data[:train_len][net_idx:]
         test_list = all_data[train_len:][net_idx:]
 
-        train_xs = map(op.itemgetter(0), train_list)
-        trXs.append(make_data_arr(train_xs, vocab_size))
+        train_xs = np.array(map(op.itemgetter(0), train_list))
+        trXs.append(dense_to_one_hot(train_xs, vocab_size))
 
-        train_ys = map(op.itemgetter(1), train_list)
-        trYs.append(make_data_arr(train_ys, vocab_size))
+        train_ys = np.array(map(op.itemgetter(1), train_list))
+        trYs.append(dense_to_one_hot(train_ys, vocab_size))
 
-        test_xs = map(op.itemgetter(0), test_list)
-        teXs.append(make_data_arr(test_xs, vocab_size))
+        test_xs = np.array(map(op.itemgetter(0), test_list))
+        teXs.append(dense_to_one_hot(test_xs, vocab_size))
 
-        test_ys = map(op.itemgetter(1), test_list)
-        teYs.append(make_data_arr(test_ys, vocab_size))
+        test_ys = np.array(map(op.itemgetter(1), test_list))
+        teYs.append(dense_to_one_hot(test_ys, vocab_size))
 print "finished processing corpus"
 
 input_dim = vocab_size
