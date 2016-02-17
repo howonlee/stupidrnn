@@ -17,9 +17,9 @@ def onehot(idx, vocab_size):
     arr[idx] = 1.0
     return arr
 
-num_nets = 3
-num_hiddens = 150
-num_epochs = 5
+num_nets = 20
+num_hiddens = 200
+num_epochs = 30
 minibatch_size = 500
 
 
@@ -139,7 +139,8 @@ def sample(sess, seeds, n, vocab_size, idx_to_char):
         curr_sample_idx = npr.choice(range(vocab_size), p=p.ravel())
         sys.stdout.write(idx_to_char[curr_sample_idx])
         sys.stdout.flush()
-        seeds.insert(0, curr_sample_idx)
+        seeds.append(curr_sample_idx)
+        seeds.pop(0)
 
 curr_trX = trXs[0][:]
 curr_teX = teXs[0][:]
