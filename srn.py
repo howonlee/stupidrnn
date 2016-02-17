@@ -12,9 +12,10 @@ import sys
 import operator as op
 
 
-num_nets = 4
-num_hiddens = 2000
-num_epochs = 12
+num_nets = 5
+num_hiddens = 150
+num_epochs = 1
+num_overall_epochs = 5
 minibatch_size = 128
 
 
@@ -28,10 +29,9 @@ def dense_to_one_hot(labels_dense, num_classes):
     return labels_one_hot
 
 with open("corpus.txt") as corpus_file:
-    chars = corpus_file.read().split()
+    chars = list(corpus_file.read())
     print len(chars)
-    # chars = chars[:3000]
-    chars = chars[:10000]
+    chars = chars[:50000]
     vocab_size = len(set(chars))
     char_to_idx = {char: idx for idx, char in enumerate(list(set(chars)))}
     idx_to_char = {idx: char for idx, char in enumerate(list(set(chars)))}
@@ -68,7 +68,7 @@ for x in xrange(num_nets):
 
 Y = tf.placeholder("float", [None, output_dim])
 
-w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.0001))]
+w_hs = [tf.Variable(tf.random_normal([input_dim, num_hiddens], stddev=0.01))]
 for x in xrange(num_nets):
     extremal_val = np.sqrt(6) / np.sqrt(num_hiddens + input_dim + num_hiddens)
     w_hs.append(
@@ -81,7 +81,7 @@ for x in xrange(num_nets):
             )
         )
 
-w_os = [tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.0001))]
+w_os = [tf.Variable(tf.random_normal([num_hiddens, output_dim], stddev=0.01))]
 for x in xrange(num_nets):
     extremal_val = np.sqrt(6) / np.sqrt(num_hiddens + output_dim)
     w_os.append(
@@ -134,32 +134,36 @@ def sample(sess, seeds, n, vocab_size, idx_to_char):
         seeds.append(curr_sample_idx)
         seeds.pop(0)
 
-curr_trX = trXs[:]
-curr_teX = teXs[:]
-for net_idx, curr_train_ops in enumerate(train_ops):
-    # the last "net" doesn't work, don't feel like debugging
-    if net_idx == len(train_ops) - 1:
-        break
+for overall_epoch in xrange(num_overall_epochs):
     print "=================="
-    print "net : ", net_idx, " / ", num_nets
+    print "overall epoch : ", overall_epoch, " / ", num_overall_epochs
     print "=================="
-    te_fd = {Y: teYs[net_idx:]}
-    te_fd[locals()["X" + str(net_idx)]] = curr_teX[:]
-    for i in range(num_epochs):
-        for start, end in zip(range(0, len(curr_trX), minibatch_size), range(minibatch_size, len(curr_trX), minibatch_size)):
-            tr_fd = {Y: trYs[start+net_idx:end+net_idx]}
-            tr_fd[locals()["X" + str(net_idx)]] = curr_trX[start:end]
-            sess.run(curr_train_ops, feed_dict=tr_fd)
-        # use prediction accuracy because I can't be bothered to do perplexity properly right now
-        curr_acc = np.mean(np.argmax(teYs[net_idx:], axis=1) ==
-                           sess.run(predict_ops[net_idx], feed_dict=te_fd))
-        print i, " / ", num_epochs, " || ",  curr_acc, time.clock()
-    total_tr_fd = {Y: trYs[net_idx:]}
-    total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
-    if net_idx < (num_nets-1):
-        curr_trX = np.hstack((trXs[net_idx+1:], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[:-1]))
-        curr_teX = np.hstack((teXs[net_idx+1:], hs[net_idx].eval(session=sess, feed_dict=te_fd)[:-1]))
+    curr_trX = trXs[:]
+    curr_teX = teXs[:]
+    for net_idx, curr_train_ops in enumerate(train_ops):
+        # the last "net" doesn't work, don't feel like debugging
+        if net_idx == len(train_ops) - 1:
+            break
+        print "=================="
+        print "net : ", net_idx, " / ", num_nets
+        print "=================="
+        te_fd = {Y: teYs[net_idx:]}
+        te_fd[locals()["X" + str(net_idx)]] = curr_teX[:]
+        for i in range(num_epochs):
+            for start, end in zip(range(0, len(curr_trX), minibatch_size), range(minibatch_size, len(curr_trX), minibatch_size)):
+                tr_fd = {Y: trYs[start+net_idx:end+net_idx]}
+                tr_fd[locals()["X" + str(net_idx)]] = curr_trX[start:end]
+                sess.run(curr_train_ops, feed_dict=tr_fd)
+            # use prediction accuracy because I can't be bothered to do perplexity properly right now
+            curr_acc = np.mean(np.argmax(teYs[net_idx:], axis=1) ==
+                               sess.run(predict_ops[net_idx], feed_dict=te_fd))
+            print i, " / ", num_epochs, " || ",  curr_acc, time.clock()
+        total_tr_fd = {Y: trYs[net_idx:]}
+        total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
+        if net_idx < (num_nets-1):
+            curr_trX = np.hstack((trXs[net_idx+1:], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[:-1]))
+            curr_teX = np.hstack((teXs[net_idx+1:], hs[net_idx].eval(session=sess, feed_dict=te_fd)[:-1]))
 
 seeds = [char_to_idx[char] for char in chars[:num_nets+1]]
 # and merrily use our global state this way...?
-sample(sess, seeds, 2000, vocab_size, idx_to_char)
+sample(sess, seeds, 400, vocab_size, idx_to_char)
