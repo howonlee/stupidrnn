@@ -8,6 +8,7 @@ import tensorflow as tf
 import numpy as np
 import numpy.random as npr
 import time
+import sys
 import operator as op
 
 
@@ -16,8 +17,8 @@ def onehot(idx, vocab_size):
     arr[idx] = 1.0
     return arr
 
-num_nets = 30
-num_hiddens = 2000
+num_nets = 3
+num_hiddens = 150
 num_epochs = 5
 minibatch_size = 500
 
@@ -124,7 +125,7 @@ def sample(sess, seeds, n, vocab_size, idx_to_char):
         curr_feed_dict = {globals()["Y"]: np.zeros((1, vocab_size))}
         for net_idx in xrange(num_nets):
             datum = np.zeros((1, vocab_size))
-            datum[0, seeds[-net_idx-1]] = 1.0
+            datum[0, seeds[net_idx]] = 1.0
             if net_idx == 0:
                 next_datum = datum
             else:
@@ -136,7 +137,8 @@ def sample(sess, seeds, n, vocab_size, idx_to_char):
         y = py_xs[-2].eval(session=sess, feed_dict=curr_feed_dict)
         p = np.exp(y) / np.sum(np.exp(y))
         curr_sample_idx = npr.choice(range(vocab_size), p=p.ravel())
-        print idx_to_char[curr_sample_idx],
+        sys.stdout.write(idx_to_char[curr_sample_idx])
+        sys.stdout.flush()
         seeds.insert(0, curr_sample_idx)
 
 curr_trX = trXs[0][:]
@@ -161,8 +163,6 @@ for net_idx, curr_train_ops in enumerate(train_ops):
         print i, " / ", num_epochs, " || ",  curr_acc, time.clock()
     total_tr_fd = {Y: trYs[net_idx]}
     total_tr_fd[locals()["X" + str(net_idx)]] = curr_trX[:]
-    print hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[:-1].shape
-    print trXs[net_idx+1].shape
     if net_idx < (num_nets-1):
         curr_trX = np.hstack((trXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=total_tr_fd)[:-1]))
         curr_teX = np.hstack((teXs[net_idx+1], hs[net_idx].eval(session=sess, feed_dict=te_fd)[:-1]))
