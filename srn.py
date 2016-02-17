@@ -39,27 +39,24 @@ with open("corpus.txt") as corpus_file:
     vocab_size = len(set(chars))
     char_to_idx = {char: idx for idx, char in enumerate(list(set(chars)))}
     idx_to_char = {idx: char for idx, char in enumerate(list(set(chars)))}
-    trXs, teXs, trYs, teYs = [], [], [], []
     train_len = ((19 * len(chars)) // 20)
-    for net_idx in xrange(num_nets):
-        print net_idx
-        all_data = []
-        for fst, snd in zip(chars, chars[1:]):
-            all_data.append((char_to_idx[fst], char_to_idx[snd]))
-        train_list = all_data[:train_len][net_idx:]
-        test_list = all_data[train_len:][net_idx:]
+    all_data = []
+    for fst, snd in zip(chars, chars[1:]):
+        all_data.append((char_to_idx[fst], char_to_idx[snd]))
+    train_list = all_data[:train_len]
+    test_list = all_data[train_len:]
 
-        train_xs = np.array(map(op.itemgetter(0), train_list))
-        trXs.append(dense_to_one_hot(train_xs, vocab_size))
+    train_xs = np.array(map(op.itemgetter(0), train_list))
+    trXs = dense_to_one_hot(train_xs, vocab_size)
 
-        train_ys = np.array(map(op.itemgetter(1), train_list))
-        trYs.append(dense_to_one_hot(train_ys, vocab_size))
+    train_ys = np.array(map(op.itemgetter(1), train_list))
+    trYs = dense_to_one_hot(train_ys, vocab_size)
 
-        test_xs = np.array(map(op.itemgetter(0), test_list))
-        teXs.append(dense_to_one_hot(test_xs, vocab_size))
+    test_xs = np.array(map(op.itemgetter(0), test_list))
+    teXs = dense_to_one_hot(test_xs, vocab_size)
 
-        test_ys = np.array(map(op.itemgetter(1), test_list))
-        teYs.append(dense_to_one_hot(test_ys, vocab_size))
+    test_ys = np.array(map(op.itemgetter(1), test_list))
+    teYs = dense_to_one_hot(test_ys, vocab_size)
 print "finished processing corpus"
 
 input_dim = vocab_size
@@ -141,8 +138,8 @@ def sample(sess, seeds, n, vocab_size, idx_to_char):
         seeds.append(curr_sample_idx)
         seeds.pop(0)
 
-curr_trX = trXs[0][:]
-curr_teX = teXs[0][:]
+curr_trX = trXs[:]
+curr_teX = teXs[:]
 for net_idx, curr_train_ops in enumerate(train_ops):
     # the last "net" doesn't work, don't feel like debugging
     if net_idx == len(train_ops) - 1:
@@ -153,7 +150,7 @@ for net_idx, curr_train_ops in enumerate(train_ops):
     te_fd = {Y: teYs[net_idx]}
     te_fd[locals()["X" + str(net_idx)]] = curr_teX[:]
     for i in range(num_epochs):
-        for start, end in zip(range(0, len(trXs[net_idx]), minibatch_size), range(minibatch_size, len(trXs[net_idx]), minibatch_size)):
+        for start, end in zip(range(0, len(curr_trX), minibatch_size), range(minibatch_size, len(curr_trX), minibatch_size)):
             tr_fd = {Y: trYs[net_idx][start:end]}
             tr_fd[locals()["X" + str(net_idx)]] = curr_trX[start:end]
             sess.run(curr_train_ops, feed_dict=tr_fd)
