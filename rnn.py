@@ -1,12 +1,12 @@
 """
 Minimal character-level Vanilla RNN model. Written by Andrej Karpathy (@karpathy)
-and modified heavily by howon lee (@howonlee)
+and modified a little bit by howon lee (@howonlee)
 BSD License
 """
 import numpy as np
 
 # data I/O
-data = open('corpus.txt', 'r').read()[:300000] # should be simple plain text file
+data = open('corpus.txt', 'r').read()
 chars = list(set(data))
 data_size, vocab_size = len(data), len(chars)
 print 'data has %d characters, %d unique.' % (data_size, vocab_size)
@@ -15,7 +15,7 @@ ix_to_char = { i:ch for i,ch in enumerate(chars) }
 
 # hyperparameters
 hidden_size = 100 # size of hidden layer of neurons
-seq_length = 25 # number of steps to unroll the RNN for
+seq_length = 50 # number of steps to unroll the RNN for
 learning_rate = 1e-1
 
 # model parameters
