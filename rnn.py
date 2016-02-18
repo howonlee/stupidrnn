@@ -4,6 +4,7 @@ and modified a little bit by howon lee (@howonlee)
 BSD License
 """
 import numpy as np
+import datetime
 
 # data I/O
 data = open('corpus.txt', 'r').read()
@@ -14,8 +15,8 @@ char_to_ix = { ch:i for i,ch in enumerate(chars) }
 ix_to_char = { i:ch for i,ch in enumerate(chars) }
 
 # hyperparameters
-hidden_size = 100 # size of hidden layer of neurons
-seq_length = 50 # number of steps to unroll the RNN for
+hidden_size = 50 # size of hidden layer of neurons
+seq_length = 1000 # number of steps to unroll the RNN for
 learning_rate = 1e-1
 
 # model parameters
@@ -104,7 +105,7 @@ while True:
                 [mWxh, mWhh, mWhy, mbh, mby]):
             mem += dparam * dparam
             param += -learning_rate * dparam / np.sqrt(mem + 1e-8) # adagrad update
-    if n % 100 == 0: print 'iter %d, loss: %f' % (n, total_loss) # print progress
+    if n % 10 == 0: print 'iter %d, loss: %f' % (n, total_loss), datetime.datetime.now() # print progress
 
     p += seq_length # move data pointer
     n += 1 # iteration counter
